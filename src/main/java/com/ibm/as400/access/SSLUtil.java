@@ -21,24 +21,59 @@ class SSLUtil {
         }
         String lowerPath = filePath.toLowerCase();
 
-        if (lowerPath.endsWith(".crt") || lowerPath.endsWith(".cer") || lowerPath.endsWith(".pem")) {
-            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-            ks.load(null, null);
-            try (FileInputStream fis = new FileInputStream(filePath)) {
-                java.security.cert.CertificateFactory cf = java.security.cert.CertificateFactory.getInstance("X.509");
-                java.util.Collection<? extends java.security.cert.Certificate> certs = cf.generateCertificates(fis);
-                int i = 0;
-                for (java.security.cert.Certificate cert : certs) {
-                    ks.setCertificateEntry("cert" + (i++), cert);
+        boolean isCertExt = lowerPath.endsWith(".crt") || lowerPath.endsWith(".cer") || lowerPath.endsWith(".pem");
+
+        if (isCertExt) {
+            try {
+                return loadAsCertificates(filePath);
+            } catch (Exception e) {
+                // If it fails, maybe it's actually a PKCS12 or JKS file mistakenly named .cer/.crt
+                try {
+                    return loadAsKeyStore(filePath, password, "PKCS12");
+                } catch (Exception e2) {
+                    try {
+                        return loadAsKeyStore(filePath, password, "JKS");
+                    } catch (Exception e3) {
+                        throw e; // Throw original exception
+                    }
                 }
             }
-            return ks;
         }
 
         String type = "JKS";
         if (lowerPath.endsWith(".p12") || lowerPath.endsWith(".pfx")) {
             type = "PKCS12";
         }
+        try {
+            return loadAsKeyStore(filePath, password, type);
+        } catch (Exception e) {
+            // If it fails, maybe they named it .p12/.jks but it's actually a certificate?
+            try {
+                return loadAsCertificates(filePath);
+            } catch (Exception e2) {
+                throw e; // Throw original exception
+            }
+        }
+    }
+
+    private static KeyStore loadAsCertificates(String filePath) throws Exception {
+        KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+        ks.load(null, null);
+        try (FileInputStream fis = new FileInputStream(filePath)) {
+            java.security.cert.CertificateFactory cf = java.security.cert.CertificateFactory.getInstance("X.509");
+            java.util.Collection<? extends java.security.cert.Certificate> certs = cf.generateCertificates(fis);
+            if (certs == null || certs.isEmpty()) {
+                throw new java.security.cert.CertificateException("No certificate data found in " + filePath);
+            }
+            int i = 0;
+            for (java.security.cert.Certificate cert : certs) {
+                ks.setCertificateEntry("cert" + (i++), cert);
+            }
+        }
+        return ks;
+    }
+
+    private static KeyStore loadAsKeyStore(String filePath, String password, String type) throws Exception {
         KeyStore ks = KeyStore.getInstance(type);
         try (FileInputStream fis = new FileInputStream(filePath)) {
             char[] pass = (password != null && !password.isEmpty()) ? password.toCharArray() : null;
