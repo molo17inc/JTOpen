@@ -50,7 +50,7 @@ class PoolItem
      *
      **/
     PoolItem(String systemName, String userID, AS400ConnectionPoolAuthentication poolAuth, boolean secure, Locale locale,
-           int service, boolean connect, boolean threadUse, boolean virtualThreads, SocketProperties socketProperties, int ccsid, AS400 rootSystem) throws AS400SecurityException, IOException
+           int service, boolean connect, boolean threadUse, boolean virtualThreads, SocketProperties socketProperties, int ccsid, AS400 rootSystem, javax.net.ssl.SSLSocketFactory customSSLSocketFactory) throws AS400SecurityException, IOException
     {
         char[] password = null;
         
@@ -104,8 +104,11 @@ class PoolItem
             if (ccsid != ConnectionPoolProperties.CCSID_DEFAULT)
                 AS400object_.setCcsid(ccsid);
 
+            if (customSSLSocketFactory != null)
+                AS400object_.setSSLSocketFactory(customSSLSocketFactory);
+
             if (connect)                                  
-                AS400object_.connectService(service);                                          
+                AS400object_.connectService(service);
             else                                          
             {
                 AS400object_.connectService(AS400.SIGNON);

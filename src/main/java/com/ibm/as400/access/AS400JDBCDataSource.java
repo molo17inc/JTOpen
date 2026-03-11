@@ -6026,13 +6026,61 @@ implements DataSource, Referenceable, Serializable, Cloneable //@PDC 550
     {
         String property = JDProperties.TLS_TRUSTSTORE_PASSWORD_;
 
-        String old = getTlsTruststore();
+        String old = getTlsTruststorePassword();
         properties_.setString(JDProperties.TLS_TRUSTSTORE_PASSWORD, truststorePassword);
 
         changes_.firePropertyChange(property, old, truststorePassword);
 
         if (JDTrace.isTraceOn()) 
             JDTrace.logInformation (this, property + ": " + truststorePassword ); 
+    }
+
+    /**
+    *  Returns the TLS keystore  
+    **/
+    public String getTlsKeystore()
+    {
+        return properties_.getString(JDProperties.TLS_KEYSTORE);
+    }
+
+    /**
+    *  Sets the TLS keystore 
+    **/
+    public void setTlsKeystore(String keystore)
+    {
+        String property = JDProperties.TLS_KEYSTORE_;
+
+        String old = getTlsKeystore();
+        properties_.setString(JDProperties.TLS_KEYSTORE, keystore);
+
+        changes_.firePropertyChange(property, old, keystore);
+
+        if (JDTrace.isTraceOn()) 
+            JDTrace.logInformation (this, property + ": " + keystore ); 
+    }
+
+    /**
+    *  Returns the TLS keystore password
+    **/
+    public String getTlsKeystorePassword()
+    {
+        return properties_.getString(JDProperties.TLS_KEYSTORE_PASSWORD);
+    }
+
+    /**
+    *  Sets the TLS keystore password
+    **/
+    public void setTlsKeystorePassword(String keystorePassword)
+    {
+        String property = JDProperties.TLS_KEYSTORE_PASSWORD_;
+
+        String old = getTlsKeystorePassword();
+        properties_.setString(JDProperties.TLS_KEYSTORE_PASSWORD, keystorePassword);
+
+        changes_.firePropertyChange(property, old, keystorePassword);
+
+        if (JDTrace.isTraceOn()) 
+            JDTrace.logInformation (this, property + ": " + keystorePassword ); 
     }
 
     

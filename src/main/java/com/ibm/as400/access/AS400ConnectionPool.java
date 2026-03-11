@@ -117,6 +117,12 @@ public class AS400ConnectionPool extends ConnectionPool implements Serializable,
     private SocketProperties socketProperties_;
     private transient long lastRun_=0;     // Last time cleanupConnections() was called.  Added for fix to JTOpen Bug #3863
     private transient boolean connectionHasBeenCreated_ = false;
+
+    private String tlsTruststore_ = null;
+    private String tlsTruststorePassword_ = null;
+    private String tlsKeystore_ = null;
+    private String tlsKeystorePassword_ = null;
+    private transient javax.net.ssl.SSLSocketFactory customSSLSocketFactory_ = null;
   
     /**
      *  Constructs an AS400ConnectionPool with default ConnectionPoolProperties.
@@ -1210,7 +1216,7 @@ public class AS400ConnectionPool extends ConnectionPool implements Serializable,
         // We don't want to hold the lock on the entire pool if we are trying to get a connection
         // for a system that is down or non-existent. ConnectionList.getConnection() is synchronized
         // inside itself, anyway. Get a connection from the list.
-        AS400 connection = connections.getConnection(connect ? service : null, secure, poolListeners_, locale, poolAuth, socketProperties_, getCCSID(), rootSystem).getAS400Object();
+        AS400 connection = connections.getConnection(connect ? service : null, secure, poolListeners_, locale, poolAuth, socketProperties_, getCCSID(), rootSystem, getCustomSSLSocketFactory()).getAS400Object();
 
         connectionHasBeenCreated_ = true;  // remember that we've created at least 1 connection
     
@@ -2013,5 +2019,24 @@ public class AS400ConnectionPool extends ConnectionPool implements Serializable,
         if (Trace.traceOn_) Trace.log(Trace.INFORMATION, "setSocketProperties()");
 
         socketProperties_ = properties;
+    }
+
+    public String getTlsTruststore() { return tlsTruststore_; }
+    public void setTlsTruststore(String truststore) { this.tlsTruststore_ = truststore; this.customSSLSocketFactory_ = null; }
+
+    public String getTlsTruststorePassword() { return tlsTruststorePassword_; }
+    public void setTlsTruststorePassword(String truststorePassword) { this.tlsTruststorePassword_ = truststorePassword; this.customSSLSocketFactory_ = null; }
+
+    public String getTlsKeystore() { return tlsKeystore_; }
+    public void setTlsKeystore(String keystore) { this.tlsKeystore_ = keystore; this.customSSLSocketFactory_ = null; }
+
+    public String getTlsKeystorePassword() { return tlsKeystorePassword_; }
+    public void setTlsKeystorePassword(String keystorePassword) { this.tlsKeystorePassword_ = keystorePassword; this.customSSLSocketFactory_ = null; }
+
+    private javax.net.ssl.SSLSocketFactory getCustomSSLSocketFactory() {
+        if (customSSLSocketFactory_ == null) {
+            customSSLSocketFactory_ = SSLUtil.getCustomSSLSocketFactory(tlsTruststore_, tlsTruststorePassword_, tlsKeystore_, tlsKeystorePassword_);
+        }
+        return customSSLSocketFactory_;
     }
 }

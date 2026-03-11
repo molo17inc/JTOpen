@@ -193,10 +193,12 @@ public class JDProperties implements Serializable, Cloneable {
   static final int USE_SOCK5 = 105; // @greenscreens
   static final int VIRTUAL_THREADS = 106; // @greenscreens
   static final int TRIM_CHAR_FIELDS = 107;
+  static final int TLS_KEYSTORE = 108;
+  static final int TLS_KEYSTORE_PASSWORD = 109;
 
   // always add to the end of the array!
 
-  private static final int NUMBER_OF_ATTRIBUTES_ = 108;
+  private static final int NUMBER_OF_ATTRIBUTES_ = 110;
 
   // Property names.
   static final String ACCESS_ = "access";
@@ -268,6 +270,8 @@ public class JDProperties implements Serializable, Cloneable {
   static final String TIME_SEPARATOR_ = "time separator";
   static final String TLS_TRUSTSTORE_ = "tls truststore";
   static final String TLS_TRUSTSTORE_PASSWORD_ = "tls truststore password";
+  static final String TLS_KEYSTORE_ = "tls keystore";
+  static final String TLS_KEYSTORE_PASSWORD_ = "tls keystore password";
   static final String TRACE_ = "trace";
   static final String TRACE_SERVER_ = "server trace";
   static final String TRACE_TOOLBOX_ = "toolbox trace";
@@ -1650,6 +1654,20 @@ public class JDProperties implements Serializable, Cloneable {
     dpi_[i].choices = new String[0];
     defaults_[i] = EMPTY_;
 
+    i = TLS_KEYSTORE;
+    dpi_[i] = new DriverPropertyInfo(TLS_KEYSTORE_, "");
+    dpi_[i].description = "TLS_KEYSTORE_DESC";
+    dpi_[i].required = false;
+    dpi_[i].choices = new String[0];
+    defaults_[i] = EMPTY_;
+
+    i = TLS_KEYSTORE_PASSWORD;
+    dpi_[i] = new DriverPropertyInfo(TLS_KEYSTORE_PASSWORD_, "");
+    dpi_[i].description = "TLS_KEYSTORE_PASSWORD_DESC";
+    dpi_[i].required = false;
+    dpi_[i].choices = new String[0];
+    defaults_[i] = EMPTY_;
+
     // Sock5 server. //@greenscreens
     i = USE_SOCK5;
     dpi_[i] = new DriverPropertyInfo(USE_SOCK5_, "");
@@ -1980,10 +1998,12 @@ public class JDProperties implements Serializable, Cloneable {
    * <li>If an {@link SSLSocketFactory} object was provided through the special
    * property defined by {@link AS400JDBCDriver#PROPERTY_SSL_SOCKET_FACTORY}, all
    * other properties are ignored and that object is returned.
-   * <li>A {@link SSLSocketFactory} will be created if both the
-   * {@value #TLS_TRUSTSTORE_} {@value #TLS_TRUSTSTORE_PASSWORD_} properties were
-   * specified, indicating a JKS-format truststore file and password. Note that
-   * the special value '*ANY' can be used to disable all verification.
+   * <li>A {@link SSLSocketFactory} will be created if truststore or keystore properties
+   * ({@value #TLS_TRUSTSTORE_}, {@value #TLS_KEYSTORE_}, etc.) are specified. Supported formats
+   * include JKS, PKCS12, and raw certificate files (.crt, .cer, .pem) which are loaded into
+   * a temporary in-memory keystore. Passwords ({@value #TLS_TRUSTSTORE_PASSWORD_}, {@value #TLS_KEYSTORE_PASSWORD_})
+   * can be omitted if the certificate or keystore does not require one. Note that
+   * the special value '*ANY' for the truststore can be used to disable all verification.
    * </ul>
    */
   SSLSocketFactory getCustomSSLSocketFactory() {
@@ -1995,107 +2015,10 @@ public class JDProperties implements Serializable, Cloneable {
     }
     final String truststoreFile = getString(TLS_TRUSTSTORE);
     final String truststorePass = getString(TLS_TRUSTSTORE_PASSWORD);
-    if (null != truststoreFile && !truststoreFile.isEmpty()) {
-      return new SSLSocketFactory() {
-        private SSLSocketFactory sslSocketFactory_ = null;
-
-        private synchronized SSLSocketFactory getSSLSocketFactory() throws IOException {
-          if (null != sslSocketFactory_) {
-            return sslSocketFactory_;
-          }
-          if ("*ANY".equalsIgnoreCase(truststoreFile) && "*ANY".equalsIgnoreCase(truststorePass)) {
-            try {
-              SSLContext ctx = SSLContext.getInstance("TLS");
-              //@formatter:off
-                            ctx.init(null, new TrustManager[] { 
-                                    new X509TrustManager() { 
-                                        @Override  public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException { }
-                                        @Override  public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException { }
-                                        @Override  public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
-                                    } 
-                                }, null);
-                            //@formatter:on
-              return sslSocketFactory_ = ctx.getSocketFactory();
-            } catch (Exception e) {
-              throw e instanceof IOException ? (IOException) e : new IOException(e);
-            }
-          }
-          try (FileInputStream trustFile = new FileInputStream(truststoreFile)) {
-
-            KeyManager[] keyManagers = null;
-            TrustManager[] trustManagers = null;
-            SSLContext ctx = SSLContext.getInstance("TLS");
-            KeyStore myKeyStore = KeyStore.getInstance("JKS");
-            TrustManagerFactory trustManagerFactory = TrustManagerFactory
-                .getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            /*
-             * If the truststore password is null assume that the keystore is to be trusted
-             */
-            /* without validating with password. This is the same effect as if the */
-            /*
-             * javax.net.ssl.trustStore JVM property was set without a corresponding
-             * password
-             */
-            if (truststorePass == null || truststorePass.length() == 0) {
-              myKeyStore.load(trustFile, null);
-              KeyManagerFactory keyManagerFactory = null;
-              keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-              keyManagerFactory.init(myKeyStore, new char[0]);
-              keyManagers = keyManagerFactory.getKeyManagers();
-            } else {
-              myKeyStore.load(trustFile, truststorePass.toCharArray());
-            }
-            trustManagerFactory.init(myKeyStore);
-            trustManagers = trustManagerFactory.getTrustManagers();
-            ctx.init(keyManagers, trustManagers, null);
-            return sslSocketFactory_ = ctx.getSocketFactory();
-          } catch (Exception e) {
-            throw e instanceof IOException ? (IOException) e : new IOException(e);
-          }
-        }
-
-        //@formatter:off
-                @Override
-                public String[] getDefaultCipherSuites() {
-                    try { return getSSLSocketFactory().getDefaultCipherSuites();} catch (Exception e) { }
-                    return ((SSLSocketFactory) SSLSocketFactory.getDefault()).getDefaultCipherSuites();
-                }
-
-                @Override
-                public String[] getSupportedCipherSuites() {
-                    try { return getSSLSocketFactory().getSupportedCipherSuites(); } catch (Exception e) { }
-                    return ((SSLSocketFactory) SSLSocketFactory.getDefault()).getSupportedCipherSuites();
-                }
-
-                @Override
-                public Socket createSocket(Socket s, String host, int port, boolean autoClose) throws IOException {
-                    return getSSLSocketFactory().createSocket(s, host, port, autoClose);
-                }
-
-                @Override
-                public Socket createSocket(String host, int port) throws IOException, UnknownHostException {
-                    return getSSLSocketFactory().createSocket(host, port);
-                }
-
-                @Override
-                public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException, UnknownHostException {
-                    return getSSLSocketFactory().createSocket(host, port, localHost, localPort);
-                }
-
-                @Override
-                public Socket createSocket(InetAddress host, int port) throws IOException {
-                    return getSSLSocketFactory().createSocket(host, port);
-                }
-
-                @Override
-                public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort)throws IOException {
-                    return getSSLSocketFactory().createSocket(address, port, localAddress, localPort);
-                }
-                //@formatter:on
-
-      };
-    }
-    return null;
+    final String keystoreFile = getString(TLS_KEYSTORE);
+    final String keystorePass = getString(TLS_KEYSTORE_PASSWORD);
+    
+    return SSLUtil.getCustomSSLSocketFactory(truststoreFile, truststorePass, keystoreFile, keystorePass);
   }
 
   /**

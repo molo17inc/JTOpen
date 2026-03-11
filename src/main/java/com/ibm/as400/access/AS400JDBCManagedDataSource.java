@@ -1965,6 +1965,44 @@ public class AS400JDBCManagedDataSource extends ToolboxWrapper
   }
 
   /**
+   * Returns the tls keystore.
+   **/
+  public String getTlsKeystore() {
+    return properties_.getString(JDProperties.TLS_KEYSTORE);
+  }
+
+  /**
+   * Sets the tls keystore.
+   **/
+  public void setTlsKeystore(String tlsKeystore) {
+    String property = JDProperties.TLS_KEYSTORE_;
+
+    properties_.setString(JDProperties.TLS_KEYSTORE, tlsKeystore);
+
+    if (JDTrace.isTraceOn())
+      JDTrace.logInformation(this, property + ": " + tlsKeystore);
+  }
+
+  /**
+   * Returns the tls keystore password.
+   **/
+  public String getTlsKeystorePassword() {
+    return properties_.getString(JDProperties.TLS_KEYSTORE_PASSWORD);
+  }
+
+  /**
+   * Sets the tls keystore password .
+   **/
+  public void setTlsKeystorePassword(String tlsKeystorePassword) {
+    String property = JDProperties.TLS_KEYSTORE_PASSWORD_;
+
+    properties_.setString(JDProperties.TLS_KEYSTORE_PASSWORD, tlsKeystorePassword);
+
+    if (JDTrace.isTraceOn())
+      JDTrace.logInformation(this, property + ": " + tlsKeystorePassword);
+  }
+
+  /**
    * Returns the value of the 'user' property.
    * 
    * @return The user.
