@@ -35,6 +35,8 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import com.ibm.as400.security.auth.ProfileTokenCredential;
+
 /**
  * Represents the properties passed as connection attributes for the driver.
  * Though marked as public, only intended to internal use within the
@@ -193,17 +195,19 @@ public class JDProperties implements Serializable, Cloneable {
   static final int USE_SOCK5 = 105; // @greenscreens
   static final int VIRTUAL_THREADS = 106; // @greenscreens
   static final int TRIM_CHAR_FIELDS = 107;
-  static final int TLS_KEYSTORE = 108;
-  static final int TLS_KEYSTORE_PASSWORD = 109;
+  static final int AUTHENTICATION_VERIFICATION_ID = 108; 
+  static final int TLS_KEYSTORE = 109;
+  static final int TLS_KEYSTORE_PASSWORD = 110;
 
   // always add to the end of the array!
 
-  private static final int NUMBER_OF_ATTRIBUTES_ = 110;
+  private static final int NUMBER_OF_ATTRIBUTES_ = 111;
 
   // Property names.
   static final String ACCESS_ = "access";
   static final String AFFINITY_FAILBACK_INTERVAL_ = "affinityFailbackInterval";
   static final String ADDITIONAL_AUTHENTICATION_FACTOR_ = "additionalAuthenticationFactor";
+  static final String AUTHENTICATION_VERIFICATION_ID_ = "authenticationVerificationId";
   static final String BEHAVIOR_OVERRIDE_ = "behavior override";
   static final String BIDI_STRING_TYPE_ = "bidi string type";
   static final String BIG_DECIMAL_ = "big decimal";
@@ -581,6 +585,14 @@ public class JDProperties implements Serializable, Cloneable {
     dpi_[i].required = false;
     dpi_[i].choices = new String[0];
     defaults_[i] = "0";
+
+    
+    i = AUTHENTICATION_VERIFICATION_ID;
+    dpi_[i] = new DriverPropertyInfo(AUTHENTICATION_VERIFICATION_ID_, "");
+    dpi_[i].description = "AUTHENTICATION_VERIFICATION_ID_DESC";
+    dpi_[i].required = false;
+    dpi_[i].choices = new String[0]; /* no choices to validate */
+    defaults_[i] = ProfileTokenCredential.DEFAULT_VERIFICATION_ID;
 
     // Behavior Override. This property is a bit mask. The following have
     // been defined:
