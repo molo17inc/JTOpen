@@ -126,7 +126,7 @@ final class ConnectionList
      **/
     private PoolItem createNewConnection(int service, boolean connect, boolean secure, 
                                        ConnectionPoolEventSupport poolListeners, Locale locale, 
-                                       AS400ConnectionPoolAuthentication poolAuth, SocketProperties socketProperties, int ccsid, AS400 rootSystem)
+                                       AS400ConnectionPoolAuthentication poolAuth, SocketProperties socketProperties, int ccsid, AS400 rootSystem, javax.net.ssl.SSLSocketFactory customSSLSocketFactory)
                                                throws AS400SecurityException, IOException, ConnectionPoolException
     {     
         if (log_ != null || Trace.traceOn_) log(ResourceBundleLoader.getText("CL_CREATING", new String[] {systemName_, userID_} ));
@@ -154,7 +154,7 @@ final class ConnectionList
         boolean threadUse = properties_.isThreadUsed();
         boolean virtualThreads = properties_.isVirtualThreads();
         // create a new connection
-        PoolItem sys = new PoolItem (systemName_, userID_, poolAuth, secure, locale, service, connect, threadUse, virtualThreads, socketProperties, ccsid, rootSystem);
+        PoolItem sys = new PoolItem (systemName_, userID_, poolAuth, secure, locale, service, connect, threadUse, virtualThreads, socketProperties, ccsid, rootSystem, customSSLSocketFactory);
 
         // set the item is in use since we are going to return it to caller
         sys.setInUse(true);
@@ -250,7 +250,7 @@ final class ConnectionList
      *  @return The pool item.
      **/
     PoolItem getConnection(Integer service, boolean secure, ConnectionPoolEventSupport poolListeners, Locale locale, 
-          AS400ConnectionPoolAuthentication poolAuth, SocketProperties socketProperties, int ccsid, AS400 rootSystem) 
+          AS400ConnectionPoolAuthentication poolAuth, SocketProperties socketProperties, int ccsid, AS400 rootSystem, javax.net.ssl.SSLSocketFactory customSSLSocketFactory) 
                   throws AS400SecurityException, IOException, ConnectionPoolException
     {
         PoolItem poolItem = null;
@@ -326,7 +326,7 @@ final class ConnectionList
         if (poolItem == null)
             poolItem = createNewConnection((service != null) ? service : 0, 
                                            (service != null), 
-                                           secure, poolListeners, locale, poolAuth, socketProperties, ccsid, rootSystem);
+                                           secure, poolListeners, locale, poolAuth, socketProperties, ccsid, rootSystem, customSSLSocketFactory);
 
         return poolItem;
     }

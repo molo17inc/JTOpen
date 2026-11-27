@@ -445,6 +445,20 @@ public class AS400JDBCDataSourceBeanInfo extends SimpleBeanInfo {
 			tlsTruststorePassword.setConstrained(false);
 			tlsTruststorePassword.setDisplayName(AS400JDBCDriver.getResource("PROP_NAME_TLS_TRUSTSTORE_PASSWORD", null));
 			tlsTruststorePassword.setShortDescription(AS400JDBCDriver.getResource("TLS_TRUSTSTORE_PASSWORD_DESC", null));
+
+			PropertyDescriptor tlsKeystore = new PropertyDescriptor("tlsKeystore", beanClass, "getTlsKeystore",
+					"setTlsKeystore");
+			tlsKeystore.setBound(true);
+			tlsKeystore.setConstrained(false);
+			tlsKeystore.setDisplayName(AS400JDBCDriver.getResource("PROP_NAME_TLS_KEYSTORE", null));
+			tlsKeystore.setShortDescription(AS400JDBCDriver.getResource("TLS_KEYSTORE_DESC", null));
+
+			PropertyDescriptor tlsKeystorePassword = new PropertyDescriptor("tlsKeystorePassword", beanClass, "getTlsKeystorePassword",
+					"setTlsKeystorePassword");
+			tlsKeystorePassword.setBound(true);
+			tlsKeystorePassword.setConstrained(false);
+			tlsKeystorePassword.setDisplayName(AS400JDBCDriver.getResource("PROP_NAME_TLS_KEYSTORE_PASSWORD", null));
+			tlsKeystorePassword.setShortDescription(AS400JDBCDriver.getResource("TLS_KEYSTORE_PASSWORD_DESC", null));
 			
 			PropertyDescriptor trace = new PropertyDescriptor("trace", beanClass, "isTrace", "setTrace"); // @w2c
 			trace.setBound(true);
@@ -964,7 +978,7 @@ public class AS400JDBCDataSourceBeanInfo extends SimpleBeanInfo {
 					useBlockUpdate, describeOption, decimalDataErrors, timestampFormat, useDrdaMetadataVersion,
 					portNumber, enableClientAffinitiesList, clientRerouteAlternateServerName,
 					clientRerouteAlternatePortNumber, affinityFailbackInterval, maxRetriesForClientReroute,
-					retryIntervalForClientReroute, enableSeamlessFailover, additionalAuthenticationFactor, stayAlive,tlsTruststore,tlsTruststorePassword,
+					retryIntervalForClientReroute, enableSeamlessFailover, additionalAuthenticationFactor, stayAlive,tlsTruststore,tlsTruststorePassword, tlsKeystore, tlsKeystorePassword,
 					useSock5, virtualThreads, trimCharFields };
 
 		} catch (Exception e) {
