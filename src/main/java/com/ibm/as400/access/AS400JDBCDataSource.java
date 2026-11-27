@@ -438,6 +438,10 @@ implements DataSource, Referenceable, Serializable, Cloneable //@PDC 550
     public char[] getAdditionalAuthenticationFactor() { 
       return properties_.getAdditionalAuthenticationFactor(); 
     }
+    
+    public String getAuthenticationVerificationId() {
+      return properties_.getString(JDProperties.AUTHENTICATION_VERIFICATION_ID); 
+    }
     /**
     *  Returns what behaviors of the Toolbox JDBC driver have been overridden.
     *  Multiple behaviors can be overridden in combination by adding 
@@ -2281,7 +2285,17 @@ implements DataSource, Referenceable, Serializable, Cloneable //@PDC 550
     public void setAdditionalAuthenticationFactor(char[] additionalAuthenticationFactor) {
      	properties_.setAdditionalAuthenticationFactor(additionalAuthenticationFactor);
     }
- 
+
+    
+    /**
+     * Sets the authentication verification id used when connecting to the system. This should be called
+     * before the {@link #getConnection()} method.
+     * @param authenticationVerificationId The verification ID presented to the server. 
+     */
+    public void setAuthenticationVerificationId(String authenticationVerificationId) {
+      properties_.setString(JDProperties.AUTHENTICATION_VERIFICATION_ID, authenticationVerificationId);
+    }
+
       //@AC1
       /**
       *  Sets whether auto-commit mode is the default connection mode for new connections.
@@ -3629,7 +3643,7 @@ implements DataSource, Referenceable, Serializable, Cloneable //@PDC 550
     }
 
 
-        /**
+    /**
     *  Sets the database password using a char array
     *  @param password The password.
     **/
@@ -3639,6 +3653,16 @@ implements DataSource, Referenceable, Serializable, Cloneable //@PDC 550
         serialPWBytes_ = xpwConfuse(password);                  //@J3a
         log(ResourceBundleLoader.getText("AS400_JDBC_DS_PASSWORD_SET"));     //@A9C
     }
+    
+    /**
+     * Sets the Kerberos service ticket used to make the connection.
+     * @param ticket The Kerberos service ticket.
+     */
+    public void setKerbTicket(byte[] ticket)
+    {
+        as400_.setKerbTicket(ticket);
+    }
+
 
 /**
     *  Sets whether to prefetch data upon executing a SELECT statement.

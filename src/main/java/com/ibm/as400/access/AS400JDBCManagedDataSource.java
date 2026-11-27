@@ -586,6 +586,18 @@ public class AS400JDBCManagedDataSource extends ToolboxWrapper
     return properties_.getAdditionalAuthenticationFactor();
   }
 
+  
+  /**
+   * returns the authentication verification id.
+   * 
+   * @return the authentication verification id
+   */
+  public String getAuthenticationVerificationId() {
+    return properties_.getString(JDProperties.AUTHENTICATION_VERIFICATION_ID);
+  }
+
+  
+  
   /**
    * Returns what behaviors of the Toolbox JDBC driver have been overridden.
    * Multiple behaviors can be overridden in combination by adding the constants
@@ -2697,6 +2709,19 @@ public class AS400JDBCManagedDataSource extends ToolboxWrapper
     properties_.setAdditionalAuthenticationFactor(additionalAuthenticationFactor);
   }
 
+  /**
+   * Sets the authentication verification id used to connect to the system. The
+   * {@link #getConnection()} method must be called as soon as possible, since the
+   * additional authentication factor may soon expire.
+   * 
+   * @param authenticationVerificationId The authentication verification id,
+   *                                       or null if not providing one
+   */
+  public void setAuthenticationVerificationId(String authenticationVerificationId) {
+    properties_.setString(JDProperties.AUTHENTICATION_VERIFICATION_ID, authenticationVerificationId); 
+  }
+
+
   // @AC1
   /**
    * Sets whether auto-commit mode is the default connection mode for new
@@ -3745,6 +3770,24 @@ public class AS400JDBCManagedDataSource extends ToolboxWrapper
     }
     logInformation(ResourceBundleLoader.getText("AS400_JDBC_DS_PASSWORD_SET"));
     logProperty(property, "***");
+  }
+
+  /**
+   * Sets the Kerberos service ticket used to make the connection.
+   * @param ticket The Kerberos service ticket.
+   */
+  public void setKerbTicket(byte[] ticket) 
+  {
+      if (ticket == null)
+          throw new NullPointerException("kerberosTicket");
+
+      as400_.setKerbTicket(ticket);
+
+      // Invalidate pooled connections
+      invalidate(getUser(), serialPWBytes_);
+
+      connectionKeyNeedsUpdate_ = true;
+
   }
 
   /**

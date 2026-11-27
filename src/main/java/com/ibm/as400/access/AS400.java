@@ -400,6 +400,26 @@ public class AS400 implements Serializable, AutoCloseable
     private boolean forcePrompt_ = false;
     private int validateSignonTimeOut_ = 0;
 
+    private transient CredentialVault kerbTicket_;
+
+    /**
+     * Sets the Kerberos service ticket used for authentication.
+     *
+     * @param ticket The Kerberos service ticket.
+     */
+
+    public void setKerbTicket(byte[] ticket) {
+        this.kerbTicket_ = new PasswordVault(ticket);
+    }
+
+    /**
+     * Clears the Kerberos service ticket associated with this object.
+     */
+    public void clearKerbTicket() {
+        if (kerbTicket_ != null && !this.kerbTicket_.isEmpty())
+            this.kerbTicket_.empty();
+    }
+
     /**
      * Constructs an AS400 object.
      * <p>
@@ -1040,7 +1060,7 @@ public class AS400 implements Serializable, AutoCloseable
      * 
      * @param system A previously instantiated AS400 object.
      **/
-    public AS400(AS400 system)
+    public AS400(AS400 system) 
     {
         super();
         if (Trace.traceOn_) Trace.log(Trace.DIAGNOSTIC, "Constructing AS400 object, system: " + system);
@@ -1107,6 +1127,7 @@ public class AS400 implements Serializable, AutoCloseable
         {
             impl_ = (AS400Impl)loadImpl2("com.ibm.as400.access.AS400ImplRemote", "com.ibm.as400.access.AS400ImplProxy");
             signonInfo_ = impl_.setState(system.impl_, credVault_);
+            impl_.setVerificationId(verificationId_); 
             
             // Do not freeze properties as these need to be changed for new JDBC connections.
         }
@@ -1814,8 +1835,13 @@ public class AS400 implements Serializable, AutoCloseable
                 if (Trace.traceOn_) Trace.log(Trace.DIAGNOSTIC, "Enabling connection listener dispatcher.");
                 impl_.addConnectionListener(dispatcher_);
             }
+            impl_.setVerificationId(verificationId_); 
         }
         
+        // If kerbTicket_ has been set, make sure the impl knows about it.
+        if (kerbTicket_ != null && !kerbTicket_.isEmpty())
+            impl_.setKerbTicket(kerbTicket_.getClearCredential());
+
         if (!propertiesFrozen_)
         {
             impl_.setState(useSSLConnection_, canUseNativeOptimizations(), threadUsed_, virtualThreads_, ccsid_, nlv_, 
@@ -4184,6 +4210,7 @@ public class AS400 implements Serializable, AutoCloseable
     public synchronized void resetAllServices()
     {
         if (Trace.traceOn_) Trace.log(Trace.DIAGNOSTIC, "Resetting all services.");
+        clearKerbTicket();
         setStayAlive(0);
 
         disconnectAllServices();
@@ -4335,6 +4362,8 @@ public class AS400 implements Serializable, AutoCloseable
             byte[] proxySeed = new byte[9];
             CredentialVault.rng.nextBytes(proxySeed);
             CredentialVault tempVault = (CredentialVault)credVault_.clone();
+            // if (tempVault.savedException_ != null) throw tempVault.savedException_; 
+            
             tempVault.storeEncodedUsingExternalSeeds(proxySeed, impl_.exchangeSeed(proxySeed));
 
             if (PASSWORD_TRACE)  Trace.log(Trace.DIAGNOSTIC, "AS400 object proxySeed:", proxySeed);
@@ -5582,9 +5611,17 @@ public class AS400 implements Serializable, AutoCloseable
                         && (credVault_.getType() == AUTHENTICATION_SCHEME_GSS_TOKEN || gssOption_ != AS400.GSS_OPTION_NONE))
                 {
                     // Try for Kerberos.
-                    byte[] newBytes = (gssCredential_ == null) ? TokenManager.getGSSToken(systemName_, gssName_) :
-                      TokenManager2.getGSSToken(systemName_, gssCredential_);
+                    byte[] newBytes = null;
 
+                    if (kerbTicket_ != null && !kerbTicket_.isEmpty() && kerbTicket_.getClearCredential().length > 0) {
+                        if (Trace.traceOn_) Trace.log(Trace.DIAGNOSTIC, "Using injected Kerberos ticket.");
+                        newBytes = kerbTicket_.getClearCredential();
+                    } else {
+                        // Fall back to generating the token normally
+                        newBytes = (gssCredential_ == null)
+                            ? TokenManager.getGSSToken(systemName_, gssName_)
+                            : TokenManager2.getGSSToken(systemName_, gssCredential_);
+                    }
                     // We do not have to empty the existing vault because the
                     // previous if-check assures us it is already empty.
                     credVault_ = new GSSTokenVault(newBytes);
@@ -5965,6 +6002,10 @@ public class AS400 implements Serializable, AutoCloseable
      * Determines whether Bidi processing should occur in AS400Varchar.toBytes() method
      */
     public boolean bidiAS400Varchar = false;
+    /** 
+     * Verification ID to use for connections
+     */
+    private String verificationId_ = ProfileTokenCredential.DEFAULT_VERIFICATION_ID;
 
     // Set the signon information for the connection
     // Typicially used when the signon server has been skipped and the information
@@ -6278,5 +6319,11 @@ public class AS400 implements Serializable, AutoCloseable
             return ((AS400ImplRemote)impl_).getLocalIPAddress();
 
         return getDefaultLocalIPAddress();
+    }
+
+    public void setVerificationId(String verificationId) {
+      verificationId_ = verificationId;
+      if (impl_ != null) impl_.setVerificationId(verificationId); 
+      
     }
 }
