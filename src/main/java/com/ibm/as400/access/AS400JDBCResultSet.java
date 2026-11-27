@@ -2806,16 +2806,24 @@ void postWarningSQLState(String sqlState)  {
                                                                                         // @C1A
                 
                 // If the data is a variable length type, we want to strip the encoded
-                // length to be consistent with other JDBC drivers
+                // length to be consistent with other JDBC drivers.
+                // The long types are variable length too: the server describes a VARCHAR
+                // longer than 256 bytes as a LONG VARCHAR, and a VARGRAPHIC or NVARCHAR from
+                // 128 characters as a LONG VARGRAPHIC.                                  @molo17
                 if (sqlType == SQLData.VARCHAR || 
+                    sqlType == SQLData.LONG_VARCHAR ||                                  // @molo17
                     sqlType == SQLData.VARGRAPHIC ||
+                    sqlType == SQLData.LONG_VARGRAPHIC ||                               // @molo17
                     sqlType == SQLData.NVARCHAR || 
+                    sqlType == SQLData.LONG_NVARCHAR ||                                 // @molo17
                     sqlType == SQLData.DATALINK) {
                   if (value != null) {
                       if (value.length >= 2) {
                         int newLength = 0x100 * (((int)value[0])&0xff) + (((int)value[1])&0xff);
                         if (sqlType == SQLData.VARGRAPHIC ||
-                            sqlType == SQLData.NVARCHAR ) {
+                            sqlType == SQLData.LONG_VARGRAPHIC ||                       // @molo17
+                            sqlType == SQLData.NVARCHAR ||
+                            sqlType == SQLData.LONG_NVARCHAR ) {                        // @molo17
                           newLength = newLength * 2; 
                         }
                         byte[] newValue = new byte[newLength]; 
